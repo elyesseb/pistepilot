@@ -1,0 +1,18 @@
+{
+  "profiles": [
+    {
+      "name": "Default French",
+      "audio_language": "fr",
+      "subtitle_language": "fr",
+      "subtitle_policy": "full_non_forced_non_sdh",
+      "auto_apply_unique_candidate": true,
+      "auto_group_series": true,
+      "prefer_srt_over_pgs": true,
+      "exclude_forced": true,
+      "exclude_sdh": true,
+      "exclude_commentary": true,
+      "exclude_dubtitle": true
+    }
+  ],
+  "last_used": "Default French"
+}

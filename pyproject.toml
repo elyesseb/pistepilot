@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pistepilot"
+version = "0.1.0-beta"
+description = "Batch tool to set preferred default audio and subtitle tracks."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "PistePilot" }
+]
+dependencies = [
+  "rich>=13.9.4",
+  "questionary>=2.0.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.2",
+  "pyinstaller>=6.10.0"
+]
+
+[project.scripts]
+pistepilot = "pistepilot.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pistepilot*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
