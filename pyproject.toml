@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pistepilot"
-version = "0.1.0-beta"
+version = "0.1.1-beta"
 description = "Batch tool to set preferred default audio and subtitle tracks."
 readme = "README.md"
 requires-python = ">=3.12"

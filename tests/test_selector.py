@@ -552,7 +552,7 @@ def test_default_language_is_english() -> None:
 def test_package_version_is_public_beta() -> None:
     from pistepilot import __version__
 
-    assert __version__ == "0.1.0-beta"
+    assert __version__ == "0.1.1-beta"
 
 
 def test_gui_starts_with_placeholder_selector_text() -> None:

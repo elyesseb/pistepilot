@@ -2,7 +2,7 @@
 
 Batch-select default audio and subtitle tracks for video files without re-encoding.
 
-Current public beta: `v0.1.0-beta`
+Current public beta: `v0.1.1-beta`
 
 ## Overview
 
