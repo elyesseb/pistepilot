@@ -206,27 +206,6 @@ logs/pistepilot_YYYYMMDD_HHMMSS.log
 - Only then process larger folders
 - Do not open files while changes are being applied
 
-## Roadmap
-
-- Better UI polish
-- More robust release grouping
-- Optional localization
-- More restore and rollback validation
-
 ## License
 
 PistePilot is released under the MIT License.
-
-## Publish to GitHub
-
-Recommended commands:
-
-```powershell
-git init
-git add .
-git status
-git commit -m "Initial public beta release"
-git branch -M main
-git remote add origin https://github.com/<username>/pistepilot.git
-git push -u origin main
-```
