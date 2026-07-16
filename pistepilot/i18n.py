@@ -171,9 +171,6 @@ LANGUAGE_ALIASES: dict[str, str] = {
     "chinese": "zh",
 }
 
-LANGUAGE_PRIORITY = ("fr", "en", "ja", "ko", "es")
-
-
 def get_language() -> str:
     value = os.environ.get("PISTEPILOT_LANG", DEFAULT_LANGUAGE).strip().lower()
     return value if value in TEXT else DEFAULT_LANGUAGE
@@ -215,10 +212,4 @@ def display_language_name(code: str, *, lang: str | None = None) -> str:
 
 def sort_language_codes(codes: set[str] | list[str] | tuple[str, ...]) -> list[str]:
     canonical = {normalize_language_code(code) for code in codes if normalize_language_code(code)}
-    return sorted(
-        canonical,
-        key=lambda code: (
-            LANGUAGE_PRIORITY.index(code) if code in LANGUAGE_PRIORITY else len(LANGUAGE_PRIORITY),
-            language_display_name(code),
-        ),
-    )
+    return sorted(canonical, key=lambda code: language_display_name(code))

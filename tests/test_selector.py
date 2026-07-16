@@ -172,6 +172,31 @@ def test_fr_and_fre_are_treated_as_same_target_language() -> None:
     assert decision.selected_type_index == 1
 
 
+def test_ar_and_ara_are_treated_as_same_target_language() -> None:
+    tracks = [make_track(kind="subtitle", type_index=1, language="ara", title="")]
+    decision = select_subtitle_track(tracks, "ar")
+    assert decision.status == "selected"
+    assert decision.selected_type_index == 1
+
+
+@pytest.mark.parametrize(
+    ("track_language", "target_language"),
+    [
+        ("es-ES", "es"),
+        ("por", "pt-BR"),
+        ("zh-TW", "zho"),
+        ("tgl", "fil"),
+        ("hin", "hi"),
+        ("pol", "pl"),
+    ],
+)
+def test_language_aliases_match_across_non_french_variants(track_language: str, target_language: str) -> None:
+    tracks = [make_track(kind="subtitle", type_index=1, language=track_language, title="")]
+    decision = select_subtitle_track(tracks, target_language)
+    assert decision.status == "selected"
+    assert decision.selected_type_index == 1
+
+
 def test_relative_rule_uses_first_french_candidate_even_if_absolute_index_changes() -> None:
     source = evaluate_report(
         base_report(
@@ -200,6 +225,74 @@ def test_relative_rule_uses_first_french_candidate_even_if_absolute_index_change
         ),
         "fr",
         "fr",
+    )
+    matched = apply_relative_subtitle_rule(target, rule)
+    assert matched is not None
+    assert matched.type_index == 26
+
+
+def test_relative_rule_uses_arabic_candidate_even_if_language_tag_changes() -> None:
+    source = evaluate_report(
+        base_report(
+            [make_track(kind="audio", type_index=1, language="ara", title="Arabic", channels=2)],
+            [
+                make_track(kind="subtitle", type_index=20, language="ar", title=""),
+                make_track(kind="subtitle", type_index=21, language="ar", title="Dubtitle"),
+            ],
+            path="Season1/E01.mkv",
+        ),
+        "ar",
+        "ar",
+    )
+    selected_track = source.subtitle_tracks[0]
+    rule = build_relative_subtitle_rule(source, selected_track, "ar")
+
+    target = evaluate_report(
+        base_report(
+            [make_track(kind="audio", type_index=1, language="ara", title="Arabic", channels=2)],
+            [
+                make_track(kind="subtitle", type_index=25, language="eng", title="English"),
+                make_track(kind="subtitle", type_index=26, language="ara", title=""),
+                make_track(kind="subtitle", type_index=27, language="ara", title="Dubtitle"),
+            ],
+            path="Season1/E02.mkv",
+        ),
+        "ar",
+        "ar",
+    )
+    matched = apply_relative_subtitle_rule(target, rule)
+    assert matched is not None
+    assert matched.type_index == 26
+
+
+def test_relative_rule_uses_portuguese_candidate_even_if_language_tag_changes() -> None:
+    source = evaluate_report(
+        base_report(
+            [make_track(kind="audio", type_index=1, language="por", title="Portuguese", channels=2)],
+            [
+                make_track(kind="subtitle", type_index=20, language="pt-BR", title=""),
+                make_track(kind="subtitle", type_index=21, language="pt", title="Dubtitle"),
+            ],
+            path="Season1/E01.mkv",
+        ),
+        "pt",
+        "pt",
+    )
+    selected_track = source.subtitle_tracks[0]
+    rule = build_relative_subtitle_rule(source, selected_track, "pt")
+
+    target = evaluate_report(
+        base_report(
+            [make_track(kind="audio", type_index=1, language="pt", title="Portuguese", channels=2)],
+            [
+                make_track(kind="subtitle", type_index=25, language="eng", title="English"),
+                make_track(kind="subtitle", type_index=26, language="por", title=""),
+                make_track(kind="subtitle", type_index=27, language="por", title="Dubtitle"),
+            ],
+            path="Season1/E02.mkv",
+        ),
+        "pt-BR",
+        "pt-BR",
     )
     matched = apply_relative_subtitle_rule(target, rule)
     assert matched is not None
@@ -371,7 +464,7 @@ def test_dynamic_language_menus_include_detected_languages() -> None:
     gui.detected_subtitle_codes = {"fr", "fra", "de", "es-ES"}
     audio_values = gui._dynamic_audio_values()
     subtitle_values = gui._dynamic_subtitle_values()
-    assert audio_values[:3] == ["French", "English", "Arabic"]
+    assert audio_values[:3] == ["Arabic", "English", "French"]
     assert "Arabic" in audio_values
     assert "French regular subtitles" in subtitle_values
     assert "German regular subtitles" in subtitle_values
@@ -622,6 +715,42 @@ def test_reset_app_state_clears_folder_reports_and_detected_languages() -> None:
     assert gui.detected_subtitle_codes == set()
     assert gui.audio_var.get() == CHOOSER_PLACEHOLDER
     assert gui.subtitle_var.get() == CHOOSER_PLACEHOLDER
+
+
+def test_refresh_language_choices_keeps_user_selected_audio_and_subtitle_when_still_available() -> None:
+    gui = PistePilotGUI.__new__(PistePilotGUI)
+    gui.folder_var = DummyVar("D:/Videos")
+    gui.audio_var = DummyVar("English")
+    gui.subtitle_var = DummyVar("Spanish regular subtitles")
+    gui.detected_audio_codes = {"fr", "en", "ja"}
+    gui.detected_subtitle_codes = {"fr", "es", "en"}
+    gui.audio_combo = DummyCombo()
+    gui.subtitle_combo = DummyCombo()
+    gui.audio_options = []
+    gui.subtitle_options = []
+
+    PistePilotGUI._refresh_language_choices(gui)
+
+    assert gui.audio_var.get() == "English"
+    assert gui.subtitle_var.get() == "Spanish regular subtitles"
+
+
+def test_refresh_language_choices_falls_back_when_previous_selection_is_not_available() -> None:
+    gui = PistePilotGUI.__new__(PistePilotGUI)
+    gui.folder_var = DummyVar("D:/Videos")
+    gui.audio_var = DummyVar("Italian")
+    gui.subtitle_var = DummyVar("Italian regular subtitles")
+    gui.detected_audio_codes = {"en", "ja"}
+    gui.detected_subtitle_codes = {"es", "en"}
+    gui.audio_combo = DummyCombo()
+    gui.subtitle_combo = DummyCombo()
+    gui.audio_options = []
+    gui.subtitle_options = []
+
+    PistePilotGUI._refresh_language_choices(gui)
+
+    assert gui.audio_var.get() == "English"
+    assert gui.subtitle_var.get() == "English regular subtitles"
 
 
 def test_gui_state_save_does_not_persist_last_folder(monkeypatch) -> None:

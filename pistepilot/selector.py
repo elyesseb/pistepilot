@@ -4,6 +4,7 @@ import json
 import unicodedata
 from dataclasses import dataclass
 
+from pistepilot.i18n import LANGUAGE_ALIASES, language_display_name, normalize_language_code
 from pistepilot.models import (
     MediaFileReport,
     PlannedChange,
@@ -111,6 +112,15 @@ LANGUAGE_PROFILES: dict[str, LanguageProfile] = {
 }
 
 
+def _aliases_for_canonical(code: str) -> set[str]:
+    canonical = normalize_language_code(code)
+    if not canonical:
+        return set()
+    aliases = {normalize_text(alias) for alias, value in LANGUAGE_ALIASES.items() if normalize_language_code(value) == canonical}
+    aliases.add(canonical)
+    return {alias for alias in aliases if alias}
+
+
 def normalize_text(value: str | None) -> str:
     if not value:
         return ""
@@ -121,16 +131,30 @@ def normalize_text(value: str | None) -> str:
 
 def language_profile_for(code: str) -> LanguageProfile:
     normalized = normalize_text(code)
-    if normalized in LANGUAGE_PROFILES:
-        return LANGUAGE_PROFILES[normalized]
+    canonical = normalize_language_code(code) or normalized
+    if canonical in LANGUAGE_PROFILES:
+        profile = LANGUAGE_PROFILES[canonical]
+        merged_aliases = profile.aliases | _aliases_for_canonical(canonical)
+        merged_audio_hints = profile.audio_hints | merged_aliases
+        merged_subtitle_hints = profile.subtitle_hints | merged_aliases
+        return LanguageProfile(
+            code=profile.code,
+            label=profile.label,
+            aliases=merged_aliases,
+            audio_hints=merged_audio_hints,
+            subtitle_hints=merged_subtitle_hints,
+        )
 
-    aliases = {normalized}
+    label = normalize_text(language_display_name(canonical)) if canonical else normalized
+    aliases = _aliases_for_canonical(canonical) | {value for value in {normalized, canonical, label} if value}
     if "-" in normalized:
         aliases.add(normalized.split("-", 1)[0])
+    if "-" in canonical:
+        aliases.add(canonical.split("-", 1)[0])
 
     return LanguageProfile(
-        code=normalized,
-        label=f"Custom code ({normalized})",
+        code=canonical,
+        label=language_display_name(canonical) if canonical else f"Custom code ({normalized})",
         aliases=aliases,
         audio_hints=aliases,
         subtitle_hints=aliases,
@@ -138,15 +162,18 @@ def language_profile_for(code: str) -> LanguageProfile:
 
 
 def _explicit_language_match(track: StreamInfo, profile: LanguageProfile) -> bool:
-    values = {
+    raw_values = {
         normalize_text(track.language),
         normalize_text(track.language_ietf),
     }
-    values = {value for value in values if value}
+    raw_values = {value for value in raw_values if value}
+    canonical_values = {normalize_language_code(value) for value in raw_values if normalize_language_code(value)}
+    if profile.code and profile.code in canonical_values:
+        return True
     return any(
         value == alias or value.startswith(f"{alias}-") or alias.startswith(f"{value}-")
         for alias in profile.aliases
-        for value in values
+        for value in raw_values | canonical_values
     )
 
 

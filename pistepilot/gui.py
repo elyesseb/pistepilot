@@ -365,6 +365,10 @@ class PistePilotGUI:
         return [option.label for option in self._build_subtitle_options()]
 
     def _refresh_language_choices(self) -> None:
+        previous_audio_code = self._code_for_audio_label(self.audio_var.get()) if self.audio_var.get() != CHOOSER_PLACEHOLDER else ""
+        previous_subtitle_code = (
+            self._code_for_subtitle_label(self.subtitle_var.get()) if self.subtitle_var.get() != CHOOSER_PLACEHOLDER else ""
+        )
         self.audio_options = self._build_audio_options()
         self.subtitle_options = self._build_subtitle_options()
         if not self.folder_var.get().strip():
@@ -376,8 +380,12 @@ class PistePilotGUI:
         self.audio_combo.configure(values=audio_values, state="readonly")
         self.subtitle_combo.configure(values=subtitle_values, state="readonly")
 
-        selected_audio_code = self._preferred_audio_code()
-        selected_subtitle_code = self._preferred_subtitle_code()
+        audio_codes = {option.code for option in self.audio_options}
+        subtitle_codes = {option.code for option in self.subtitle_options}
+        selected_audio_code = previous_audio_code if previous_audio_code and previous_audio_code in audio_codes else self._preferred_audio_code()
+        selected_subtitle_code = (
+            previous_subtitle_code if previous_subtitle_code and previous_subtitle_code in subtitle_codes else self._preferred_subtitle_code()
+        )
         self.audio_var.set(self._label_for_code(self.audio_options, selected_audio_code) or audio_values[0])
         self.subtitle_var.set(self._label_for_code(self.subtitle_options, selected_subtitle_code) or subtitle_values[0])
 
@@ -1088,23 +1096,55 @@ class PistePilotGUI:
                         self.available_tracks_var.set(self._available_tracks_label())
                         self._refresh_language_choices()
                     else:
+                        previous_audio_code = (
+                            self._code_for_audio_label(self.audio_var.get()) if self.audio_var.get() != CHOOSER_PLACEHOLDER else ""
+                        )
+                        previous_subtitle_code = (
+                            self._code_for_subtitle_label(self.subtitle_var.get())
+                            if self.subtitle_var.get() != CHOOSER_PLACEHOLDER
+                            else ""
+                        )
                         self.audio_options = self._build_audio_options(fallback_defaults=True)
                         self.subtitle_options = self._build_subtitle_options(fallback_defaults=True)
                         self.audio_combo.configure(values=[option.label for option in self.audio_options], state="readonly")
                         self.subtitle_combo.configure(values=[option.label for option in self.subtitle_options], state="readonly")
-                        self.audio_var.set(self._label_for_code(self.audio_options, PRIORITY_AUDIO_CODE) or self.audio_options[0].label)
-                        self.subtitle_var.set(self._label_for_code(self.subtitle_options, PRIORITY_SUBTITLE_CODE) or self.subtitle_options[0].label)
+                        fallback_audio_code = previous_audio_code if previous_audio_code in {option.code for option in self.audio_options} else self._preferred_audio_code()
+                        fallback_subtitle_code = (
+                            previous_subtitle_code
+                            if previous_subtitle_code in {option.code for option in self.subtitle_options}
+                            else self._preferred_subtitle_code()
+                        )
+                        self.audio_var.set(self._label_for_code(self.audio_options, fallback_audio_code) or self.audio_options[0].label)
+                        self.subtitle_var.set(
+                            self._label_for_code(self.subtitle_options, fallback_subtitle_code) or self.subtitle_options[0].label
+                        )
                         self.available_tracks_var.set("No clear track language list was detected yet. Common language choices are shown.")
                     self._update_language_warning()
                     self._refresh_action_states()
                 elif event == "prescan_error":
                     if not self.reports:
+                        previous_audio_code = (
+                            self._code_for_audio_label(self.audio_var.get()) if self.audio_var.get() != CHOOSER_PLACEHOLDER else ""
+                        )
+                        previous_subtitle_code = (
+                            self._code_for_subtitle_label(self.subtitle_var.get())
+                            if self.subtitle_var.get() != CHOOSER_PLACEHOLDER
+                            else ""
+                        )
                         self.audio_options = self._build_audio_options(fallback_defaults=True)
                         self.subtitle_options = self._build_subtitle_options(fallback_defaults=True)
                         self.audio_combo.configure(values=[option.label for option in self.audio_options], state="readonly")
                         self.subtitle_combo.configure(values=[option.label for option in self.subtitle_options], state="readonly")
-                        self.audio_var.set(self._label_for_code(self.audio_options, PRIORITY_AUDIO_CODE) or self.audio_options[0].label)
-                        self.subtitle_var.set(self._label_for_code(self.subtitle_options, PRIORITY_SUBTITLE_CODE) or self.subtitle_options[0].label)
+                        fallback_audio_code = previous_audio_code if previous_audio_code in {option.code for option in self.audio_options} else self._preferred_audio_code()
+                        fallback_subtitle_code = (
+                            previous_subtitle_code
+                            if previous_subtitle_code in {option.code for option in self.subtitle_options}
+                            else self._preferred_subtitle_code()
+                        )
+                        self.audio_var.set(self._label_for_code(self.audio_options, fallback_audio_code) or self.audio_options[0].label)
+                        self.subtitle_var.set(
+                            self._label_for_code(self.subtitle_options, fallback_subtitle_code) or self.subtitle_options[0].label
+                        )
                         self.available_tracks_var.set("Track detection is unavailable. Default language choices are shown instead.")
                         self.warning_var.set("Quick track detection was not available for this folder.")
                         self._refresh_action_states()
