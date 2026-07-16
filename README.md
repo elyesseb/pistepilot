@@ -33,7 +33,23 @@ It is designed for folders containing many video files with multiple audio and s
 
 ## Screenshots
 
-Add screenshots later.
+### 1. Choose a folder and track preferences
+
+Select a video folder, choose the preferred audio language, and review the available subtitle languages from the main window.
+
+![PistePilot folder and track preferences](screenshots/01.png)
+
+### 2. Review the analysis
+
+After analysis, the summary confirms that the files are ready and shows the recommended audio and subtitle tracks.
+
+![PistePilot analysis summary](screenshots/02.png)
+
+### 3. Confirm before applying changes
+
+Before modifying any file, PistePilot displays a confirmation dialog with the number of files, the selected tracks, and the safety guarantees.
+
+![PistePilot apply confirmation](screenshots/03.png)
 
 ## Requirements
 
